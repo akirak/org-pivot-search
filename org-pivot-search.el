@@ -74,6 +74,20 @@ The function takes two arguments: the user input, and a list of Org files."
   "Hook run after an Org entry is displayed in `org-pivot-search-from-files'."
   :type 'hook)
 
+(defcustom org-pivot-search-width-function #'frame-width
+  "Function to determine the maximum width of completion candidates.
+
+The function is called without arguments, and the result is
+passed to `org-format-outline-path'.
+
+The default value is `frame-width', but you can use
+`window-width', which is more suitable if you use
+`vertico-buffer-mode' <https://github.com/oantolin/vertico> in
+completion UI."
+  :type 'function
+  :options '((const :tag "The width of the frame" frame-width)
+             (const :tag "The width of the normal window" window-width)))
+
 ;;;###autoload
 (cl-defun org-pivot-search-from-files (files &key display-action (indirect t))
   "Perform search of items from a given set of Org files."
@@ -84,7 +98,7 @@ The function takes two arguments: the user input, and a list of Org files."
   (let* ((files (ensure-list files))
          (multi-p (> (length files) 1))
          (style (make-symbol "org-pivot-search--completion-style"))
-         (width (window-width))
+         (width (funcall org-pivot-search-width-function))
          (nlink-items (org-pivot-search--nlink-candidates files))
          (table (make-hash-table :test #'equal :size 200))
          ;; The completion table is usually called more than once, e.g. for
