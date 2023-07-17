@@ -244,10 +244,11 @@ completion UI."
 
 (defun org-pivot-search--candidate-prefix-1 (file)
   (let ((filename (abbreviate-file-name file)))
-    (format "%s:" (if-let (obj (and (featurep 'org-dog)
-                                    (org-dog-file-object filename :allow-missing t)))
-                      (oref obj relative)
-                    filename))))
+    (if-let (obj (and (featurep 'org-dog)
+                      (org-dog-file-object filename :allow-missing t)))
+        ;; oref doesn't work if this library is byte-compiled without org-dog
+        (slot-value obj 'relative)
+      filename)))
 
 (defun org-pivot-search--nlink-candidates (files)
   (when (featurep 'org-nlink)
