@@ -105,84 +105,106 @@ completion UI."
   :options '((const :tag "The width of the frame" frame-width)
              (const :tag "The width of the normal window" window-width)))
 
+(defvar org-pivot-search-gc-threshold (* 64 1024 1024)
+  "Large GC threshold for temporary increase.")
+
+(defvar org-pivot-search-gc-percentage 0.5
+  "Large GC percentage for temporary increase.")
+
+;;;; Macro
+
+(defmacro org-pivot-search--with-increased-gc (&rest body)
+  (cl-with-gensyms (overwrite)
+    `(let* ((,overwrite (> org-pivot-search-gc-threshold gc-cons-threshold))
+            (gc-cons-threshold (if ,overwrite
+                                   org-pivot-search-gc-threshold
+                                 gc-cons-threshold))
+            (gc-cons-percentage (if ,overwrite
+                                    org-pivot-search-gc-percentage
+                                  gc-cons-percentage)))
+       ,@body)))
+
+;;;; Interactive commands
+
 ;;;###autoload
 (cl-defun org-pivot-search-from-files (files &key display-action (indirect t))
   "Perform search of items from a given set of Org files."
   (interactive (funcall org-pivot-search-default-arguments)
                org-mode)
-  (let* ((files (ensure-list files))
-         (multi-p (> (length files) 1))
-         (style (make-symbol "org-pivot-search--completion-style"))
-         (width (funcall org-pivot-search-width-function))
-         (nlink-items (org-pivot-search--nlink-candidates files))
-         (table (make-hash-table :test #'equal :size 200))
-         ;; The completion table is usually called more than once, e.g. for
-         ;; `all-completions' and `try-completion', so it will be more efficient
-         ;; to memorize dynamic candidates.
-         ql-candidates)
-    (cl-labels
-        ((process-candidates (items)
-           (dolist (x items)
-             (puthash x x table))
-           items)
+  (org-pivot-search--with-increased-gc
+   (let* ((files (ensure-list files))
+          (multi-p (> (length files) 1))
+          (style (make-symbol "org-pivot-search--completion-style"))
+          (width (funcall org-pivot-search-width-function))
+          (nlink-items (org-pivot-search--nlink-candidates files))
+          (table (make-hash-table :test #'equal :size 200))
+          ;; The completion table is usually called more than once, e.g. for
+          ;; `all-completions' and `try-completion', so it will be more efficient
+          ;; to memorize dynamic candidates.
+          ql-candidates)
+     (cl-labels
+         ((process-candidates (items)
+            (dolist (x items)
+              (puthash x x table))
+            items)
 
-         ;; Completion style
+          ;; Completion style
 
-         (try (input _table _pred point &optional _metadata)
-           (cons input point))
+          (try (input _table _pred point &optional _metadata)
+            (cons input point))
 
-         (all (input table pred _point)
-           (all-completions input table pred))
+          (all (input table pred _point)
+            (all-completions input table pred))
 
-         (ql-candidates (input)
-           (let (result
-                 (query (org-ql--query-string-to-sexp
-                         (concat (or org-pivot-search-query-prefix "")
-                                 input))))
-             ;; `mapcan' seems to create a circular list, which makes completion
-             ;; freeze. I will use `append' as an alternative here. I am not
-             ;; sure if this is a proper way to avoid the issue.
-             (dolist (file files)
-               (setq org-outline-path-cache nil)
-               (setq result (append result (org-ql-select file query
-                                             :action
-                                             (apply-partially
-                                              #'org-pivot-search--entry-candidate
-                                              width
-                                              (when multi-p
-                                                (org-pivot-search--candidate-prefix-1 file)))))))
-             result))
+          (ql-candidates (input)
+            (let (result
+                  (query (org-ql--query-string-to-sexp
+                          (concat (or org-pivot-search-query-prefix "")
+                                  input))))
+              ;; `mapcan' seems to create a circular list, which makes completion
+              ;; freeze. I will use `append' as an alternative here. I am not
+              ;; sure if this is a proper way to avoid the issue.
+              (dolist (file files)
+                (setq org-outline-path-cache nil)
+                (setq result (append result (org-ql-select file query
+                                              :action
+                                              (apply-partially
+                                               #'org-pivot-search--entry-candidate
+                                               width
+                                               (when multi-p
+                                                 (org-pivot-search--candidate-prefix-1 file)))))))
+              result))
 
-         (completions (input pred action)
-           (pcase action
-             (`metadata
-              (cons 'metadata
-                    (list (cons 'category 'multi-category)
-                          (cons 'group-function #'org-pivot-search--group)
-                          (cons 'annotation-function #'org-pivot-search--annotate))))
-             (`t
-              (process-candidates (append (all-completions input nlink-items pred)
-                                          (setq ql-candidates (ql-candidates input)))))
-             (`nil
-              (try-completion input nlink-items pred))
-             (`lambda
-               (when (member input nlink-items)
-                 t))
-             (`(boundaries . ,_suffix)
-              nil))))
-      (let* ((completion-ignore-case t)
-             (completion-styles `(,style))
-             (completion-styles-alist (cons (list style #'try #'all)
-                                            completion-styles-alist))
-             (input (completing-read (format "Org search (%s): "
-                                             (mapconcat #'file-name-nondirectory
-                                                        files ", "))
-                                     #'completions)))
-        (if-let (choice (gethash input table))
-            (org-pivot-search--run-choice choice
-                                          :display-action display-action
-                                          :indirect indirect)
-          (funcall org-pivot-search-fallback-function input files))))))
+          (completions (input pred action)
+            (pcase action
+              (`metadata
+               (cons 'metadata
+                     (list (cons 'category 'multi-category)
+                           (cons 'group-function #'org-pivot-search--group)
+                           (cons 'annotation-function #'org-pivot-search--annotate))))
+              (`t
+               (process-candidates (append (all-completions input nlink-items pred)
+                                           (setq ql-candidates (ql-candidates input)))))
+              (`nil
+               (try-completion input nlink-items pred))
+              (`lambda
+                (when (member input nlink-items)
+                  t))
+              (`(boundaries . ,_suffix)
+               nil))))
+       (let* ((completion-ignore-case t)
+              (completion-styles `(,style))
+              (completion-styles-alist (cons (list style #'try #'all)
+                                             completion-styles-alist))
+              (input (completing-read (format "Org search (%s): "
+                                              (mapconcat #'file-name-nondirectory
+                                                         files ", "))
+                                      #'completions)))
+         (if-let (choice (gethash input table))
+             (org-pivot-search--run-choice choice
+                                           :display-action display-action
+                                           :indirect indirect)
+           (funcall org-pivot-search-fallback-function input files)))))))
 
 (defun org-pivot-search-default-arguments-1 (&optional arg)
   "Arguments specification.
