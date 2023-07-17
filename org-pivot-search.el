@@ -247,11 +247,17 @@ See `org-pivot-search-default-arguments'."
          (end-marker (copy-marker (org-element-property :end element)))
          (item (cons 'org-headline (list headline beg-marker end-marker))))
     (add-text-properties 0 (length candidate)
-                         (list 'org-element element
+                         (list 'org-element (org-pivot-search--circular-free element)
                                'multi-category item
                                'org-marker beg-marker)
                          candidate)
     candidate))
+
+(defun org-pivot-search--circular-free (element)
+  (thread-first
+    element
+    (org-element-put-property :parent nil)
+    (org-element-put-property :title nil)))
 
 (defun org-pivot-search--olp-from-element (element)
   "Return a reversed outline path of an ELEMENT."
