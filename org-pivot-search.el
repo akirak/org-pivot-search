@@ -79,6 +79,14 @@ be used as the display action of `display-buffer', which see."
 The function takes two arguments: the user input, and a list of Org files."
   :type 'function)
 
+(defcustom org-pivot-search-query-prefix nil
+  "Default query prefix of org-ql search.
+
+This is prepended to the user input in
+`org-pivot-search-from-files' to build a query."
+  :type '(choice (string :tag "Non-sexp org-ql query")
+                 (const nil)))
+
 (defcustom org-pivot-search-entry-display-hook nil
   "Hook run after an Org entry is displayed in `org-pivot-search-from-files'."
   :type 'hook)
@@ -136,7 +144,9 @@ completion UI."
 
          (ql-candidates (input)
            (mapcan (apply-partially #'ql-candidates-for-file
-                                    (org-ql--query-string-to-sexp input))
+                                    (org-ql--query-string-to-sexp
+                                     (concat (or org-pivot-search-query-prefix "")
+                                             input)))
                    files))
 
          (completions (input pred action)
