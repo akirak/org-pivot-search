@@ -143,8 +143,7 @@ completion UI."
               (process-candidates (append (all-completions input nlink-items pred)
                                           (setq ql-candidates (ql-candidates input)))))
              (`nil
-              (or (try-completion input nlink-items pred)
-                  (try-completion input ql-candidates pred)))
+              (try-completion input nlink-items pred))
              (`lambda
                (when (member input nlink-items)
                  t))
