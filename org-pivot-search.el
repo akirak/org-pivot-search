@@ -54,6 +54,15 @@
 
 (defconst org-pivot-search-headline-group "Headline")
 
+(defcustom org-pivot-search-default-arguments
+  #'org-pivot-search-default-arguments-1
+  "Function used to determine the arguments of `org-pivot-search-from-files'.
+
+The function takes one argument, the current prefix argument. It
+should return a list, which is used as the argument of
+`org-pivot-search-from-files' function, which see."
+  :type 'function)
+
 (defcustom org-pivot-search-display-action
   '(display-buffer-same-window
     (inhibit-same-window . nil))
@@ -91,9 +100,7 @@ completion UI."
 ;;;###autoload
 (cl-defun org-pivot-search-from-files (files &key display-action (indirect t))
   "Perform search of items from a given set of Org files."
-  (interactive (list (list (buffer-file-name (org-base-buffer (current-buffer))))
-                     :display-action org-pivot-search-display-action
-                     :indirect nil)
+  (interactive (funcall org-pivot-search-default-arguments)
                org-mode)
   (let* ((files (ensure-list files))
          (multi-p (> (length files) 1))
@@ -162,6 +169,14 @@ completion UI."
                                           :display-action display-action
                                           :indirect indirect)
           (funcall org-pivot-search-fallback-function input files))))))
+
+(defun org-pivot-search-default-arguments-1 (&optional arg)
+  "Arguments specification.
+
+See `org-pivot-search-default-arguments'."
+  (list (list (buffer-file-name (org-base-buffer (current-buffer))))
+        :display-action org-pivot-search-display-action
+        :indirect nil))
 
 ;;;; Running the choice
 
