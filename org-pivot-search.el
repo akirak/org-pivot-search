@@ -121,15 +121,7 @@ completion UI."
          ;; to memorize dynamic candidates.
          ql-candidates)
     (cl-labels
-        ((ql-candidates-for-file (predicate file)
-           (org-ql-select file
-             predicate
-             :action (apply-partially #'org-pivot-search--entry-candidate
-                                      width
-                                      (when multi-p
-                                        (org-pivot-search--candidate-prefix-1 file)))))
-
-         (process-candidates (items)
+        ((process-candidates (items)
            (dolist (x items)
              (puthash x x table))
            items)
@@ -143,11 +135,22 @@ completion UI."
            (all-completions input table pred))
 
          (ql-candidates (input)
-           (mapcan (apply-partially #'ql-candidates-for-file
-                                    (org-ql--query-string-to-sexp
-                                     (concat (or org-pivot-search-query-prefix "")
-                                             input)))
-                   files))
+           (let (result
+                 (query (org-ql--query-string-to-sexp
+                         (concat (or org-pivot-search-query-prefix "")
+                                 input))))
+             ;; `mapcan' seems to create a circular list, which makes completion
+             ;; freeze. I will use `append' as an alternative here. I am not
+             ;; sure if this is a proper way to avoid the issue.
+             (dolist (file files)
+               (setq result (append result (org-ql-select file query
+                                             :action
+                                             (apply-partially
+                                              #'org-pivot-search--entry-candidate
+                                              width
+                                              (when multi-p
+                                                (org-pivot-search--candidate-prefix-1 file)))))))
+             result))
 
          (completions (input pred action)
            (pcase action
