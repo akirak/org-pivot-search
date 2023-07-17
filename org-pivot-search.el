@@ -143,6 +143,7 @@ completion UI."
              ;; freeze. I will use `append' as an alternative here. I am not
              ;; sure if this is a proper way to avoid the issue.
              (dolist (file files)
+               (setq org-outline-path-cache nil)
                (setq result (append result (org-ql-select file query
                                              :action
                                              (apply-partially
@@ -240,12 +241,14 @@ See `org-pivot-search-default-arguments'."
 ;;;; Building candidates
 
 (defun org-pivot-search--entry-candidate (&optional width prefix)
-  (let* ((element (org-element-at-point))
+  (let* ((element (org-element-headline-parser))
          (headline (org-link-display-format
                     (org-element-property :raw-value element)))
-         (candidate (org-format-outline-path
-                     (org-pivot-search--olp-from-element element)
-                     width prefix))
+         (olp (thread-last
+                (org-get-outline-path 'with-self 'use-cache)
+                (mapcar #'org-no-properties)
+                (mapcar #'org-link-display-format)))
+         (candidate (org-format-outline-path olp width prefix))
          (beg-marker (copy-marker (org-element-property :begin element)))
          (end-marker (copy-marker (org-element-property :end element)))
          (item (cons 'org-headline (list headline beg-marker end-marker))))
@@ -261,20 +264,6 @@ See `org-pivot-search-default-arguments'."
     element
     (org-element-put-property :parent nil)
     (org-element-put-property :title nil)))
-
-(defun org-pivot-search--olp-from-element (element)
-  "Return a reversed outline path of an ELEMENT."
-  (let (olp)
-    (while (and element
-                ;; The top-level element is `org-data'.
-                (eq 'headline (org-element-type element)))
-      (push (thread-last
-              (org-element-property :raw-value element)
-              (org-no-properties)
-              (org-link-display-format))
-            olp)
-      (setq element (org-element-property :parent element)))
-    olp))
 
 (defun org-pivot-search--candidate-prefix-1 (file)
   (let ((filename (abbreviate-file-name file)))
