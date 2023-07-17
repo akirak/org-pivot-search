@@ -121,6 +121,12 @@ completion UI."
 
          ;; Completion style
 
+         (try (input _table _pred point &optional _metadata)
+           (cons input point))
+
+         (all (input table pred _point)
+           (all-completions input table pred))
+
          (ql-candidates (input)
            (mapcan (apply-partially #'ql-candidates-for-file
                                     (org-ql--query-string-to-sexp input))
@@ -145,6 +151,9 @@ completion UI."
              (`(boundaries . ,_suffix)
               nil))))
       (let* ((completion-ignore-case t)
+             (completion-styles `(,style))
+             (completion-styles-alist (cons (list style #'try #'all)
+                                            completion-styles-alist))
              (input (completing-read (format "Org search (%s): "
                                              (mapconcat #'file-name-nondirectory
                                                         files ", "))
