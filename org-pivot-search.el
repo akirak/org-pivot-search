@@ -273,7 +273,7 @@ See `org-pivot-search-default-arguments'."
          (candidate (org-format-outline-path olp width prefix))
          (beg-marker (copy-marker (org-element-property :begin element)))
          (end-marker (copy-marker (org-element-property :end element)))
-         (item (cons 'org-headline (list headline beg-marker end-marker))))
+         (item (cons 'org-headline (cons headline (cons beg-marker end-marker)))))
     (add-text-properties 0 (length candidate)
                          (list 'org-element (org-pivot-search--circular-free element)
                                'multi-category item
