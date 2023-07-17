@@ -204,9 +204,10 @@ completion UI."
       (otherwise org-pivot-search-headline-group))))
 
 (defun org-pivot-search--annotate (candidate)
-  (cl-case (org-pivot-search--category candidate)
-    (org-nlink-target (org-nlink-annotate-target candidate))
-    (otherwise nil)))
+  (while-no-input
+    (cl-case (org-pivot-search--category candidate)
+      (org-nlink-target (org-nlink-annotate-target candidate))
+      (otherwise nil))))
 
 ;;;; Building candidates
 
