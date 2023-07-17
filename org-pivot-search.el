@@ -222,7 +222,7 @@ completion UI."
          (end-marker (copy-marker (org-element-property :end element)))
          (item (cons 'org-headline (list headline beg-marker end-marker))))
     (add-text-properties 0 (length candidate)
-                         (list 'element element
+                         (list 'org-element element
                                'multi-category item
                                'org-marker beg-marker)
                          candidate)
