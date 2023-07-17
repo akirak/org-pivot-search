@@ -1,8 +1,9 @@
 * org-pivot-search for large Org files
 This is a search command for org-mode.
 
-It is like org-ql-find shipped which is as part of [[https://github.com/alphapapa/org-ql/][org-ql]] but is created
-specifically for my use cases and supports advanced customization.
+It is somewhat a tweaked version of org-ql-find, which shipped is as part of
+[[https://github.com/alphapapa/org-ql/][org-ql]]. It is created specifically for my use cases and supports advanced
+customization and some extra features.
 
 It is not for everyone​— It was originally planned to become part of [[https://github.com/akirak/org-dog][org-dog]],
 which is based on a different model from Zettelkasten. However, this package
