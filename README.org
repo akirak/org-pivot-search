@@ -1,7 +1,7 @@
 * org-pivot-search for large Org files
 This is a search command for org-mode.
 
-It is somewhat a tweaked version of org-ql-find, which shipped is as part of
+It is somewhat a tweaked version of org-ql-find, which is shipped as part of
 [[https://github.com/alphapapa/org-ql/][org-ql]]. It is created specifically for my use cases and supports advanced
 customization and some extra features.
 
