@@ -11,7 +11,7 @@ actually does not depend on org-dog, and I thought it could be useful even
 independently, so I have decided to make it a separate package.
 ** Dependencies
 - A fairly recent version of GNU Emacs
-- [[https://github.com/alphapapa/org-ql][org-ql]] (mandatory)
+- [[https://github.com/alphapapa/org-ql][org-ql]] (required)
 - [[https://github.com/akirak/org-dog][org-dog]] (optional for integration)
 - [[https://github.com/akirak/org-nlink.el][org-nlink]] (optional for displaying link targets)
 ** Usage
