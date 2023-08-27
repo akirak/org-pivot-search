@@ -105,6 +105,12 @@ completion UI."
   :options '((const :tag "The width of the frame" frame-width)
              (const :tag "The width of the normal window" window-width)))
 
+(defcustom org-pivot-search-annotation-function nil
+  "Function used to generate annotation of each completion candidate.
+
+The function takes the marker of the headline as an argument."
+  :type '(choice function (const nil)))
+
 (defvar org-pivot-search-gc-threshold (* 64 1024 1024)
   "Large GC threshold for temporary increase.")
 
@@ -258,6 +264,11 @@ See `org-pivot-search-default-arguments'."
   (while-no-input
     (cl-case (org-pivot-search--category candidate)
       (org-nlink-target (org-nlink-annotate-target candidate))
+      (org-headline (when org-pivot-search-annotation-function
+                      (pcase-exhaustive (cdr (get-text-property 0 'multi-category candidate))
+                        (`(,_headline . (,beg-marker . ,_end-marker))
+                         (cl-etypecase org-pivot-search-annotation-function
+                           (function (funcall org-pivot-search-annotation-function beg-marker)))))))
       (otherwise nil))))
 
 ;;;; Building candidates
