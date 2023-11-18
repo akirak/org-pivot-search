@@ -267,8 +267,8 @@ See `org-pivot-search-default-arguments'."
       (org-headline (when org-pivot-search-annotation-function
                       (pcase-exhaustive (cdr (get-text-property 0 'multi-category candidate))
                         (`(,_headline . (,beg-marker . ,_end-marker))
-                         (cl-etypecase org-pivot-search-annotation-function
-                           (function (funcall org-pivot-search-annotation-function beg-marker)))))))
+                         (when (functionp org-pivot-search-annotation-function)
+                           (funcall org-pivot-search-annotation-function beg-marker))))))
       (otherwise nil))))
 
 ;;;; Building candidates
