@@ -133,8 +133,12 @@ The function takes the marker of the headline as an argument."
 ;;;; Interactive commands
 
 ;;;###autoload
-(cl-defun org-pivot-search-from-files (files &key display-action (indirect t))
-  "Perform search of items from a given set of Org files."
+(cl-defun org-pivot-search-from-files (files &key display-action (indirect t)
+                                             noninteractive)
+  "Perform search of items from a given set of Org files.
+
+If NONINTERACTIVE is non-nil, it returns a cons cell of (CATEGORY
+. STRING) instead of opening the target location in a window."
   (interactive (funcall org-pivot-search-default-arguments)
                org-mode)
   (org-pivot-search--with-increased-gc
@@ -206,11 +210,16 @@ The function takes the marker of the headline as an argument."
                                               (mapconcat #'file-name-nondirectory
                                                          files ", "))
                                       #'completions)))
-         (if-let (choice (gethash input table))
-             (org-pivot-search--run-choice choice
-                                           :display-action display-action
-                                           :indirect indirect)
-           (funcall org-pivot-search-fallback-function input files)))))))
+         (if noninteractive
+             (if-let (choice (gethash input table))
+                 (cons (org-pivot-search--category choice)
+                       choice)
+               (cons nil choice))
+           (if-let (choice (gethash input table))
+               (org-pivot-search--run-choice choice
+                                             :display-action display-action
+                                             :indirect indirect)
+             (funcall org-pivot-search-fallback-function input files))))))))
 
 (defun org-pivot-search-default-arguments-1 (&optional arg)
   "Arguments specification.
