@@ -241,14 +241,17 @@ See `org-pivot-search-default-arguments'."
                                    (buffer-file-name (marker-buffer marker))
                                    :radio radio))))
     (otherwise
-     (let ((marker (get-text-property 0 'org-marker choice)))
-       (pop-to-buffer (if indirect
-                          (org-with-point-at marker
-                            (org-tree-to-indirect-buffer))
-                        (with-current-buffer (marker-buffer marker)
-                          (goto-char marker)
-                          (current-buffer)))
-                      display-action)
+     (let* ((marker (get-text-property 0 'org-marker choice))
+            (ret (if indirect
+                     (org-with-point-at marker
+                       (org-tree-to-indirect-buffer))
+                   (with-current-buffer (marker-buffer marker)
+                     (goto-char marker)
+                     (current-buffer)))))
+       (cl-etypecase ret
+         (string (pop-to-buffer ret display-action))
+         (buffer (pop-to-buffer ret display-action))
+         (window (select-window ret)))
        (run-hooks 'org-pivot-search-entry-display-hook)))))
 
 (defun org-pivot-search-fallback-1 (input files)
