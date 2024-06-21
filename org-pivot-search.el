@@ -135,8 +135,9 @@ The function takes the marker of the headline as an argument."
 ;;;###autoload
 (cl-defun org-pivot-search-from-files (files &key display-action (indirect t)
                                              noninteractive
-                                             query-prefix)
                                              prompt
+                                             query-prefix
+                                             query-filter)
   "Perform search of items from a given set of Org files.
 
 If NONINTERACTIVE is non-nil, it returns a cons cell of (CATEGORY
@@ -145,7 +146,10 @@ If NONINTERACTIVE is non-nil, it returns a cons cell of (CATEGORY
 PROMPT is the prompt of the `completing-read' session.
 
 QUERY-PREFIX should be, like in `org-ql-completing-read', a string
-prepended to the plain query typed by the user."
+prepended to the plain query typed by the user.
+
+QUERY-FILTER should be, like in `org-ql-completing-read', a function
+that transforms the plain query just before it is parsed."
   (declare (indent 1))
   (interactive (funcall org-pivot-search-default-arguments)
                org-mode)
@@ -177,9 +181,11 @@ prepended to the plain query typed by the user."
           (ql-candidates (input)
             (let (result
                   (query (org-ql--query-string-to-sexp
-                          (concat (or org-pivot-search-query-prefix "")
-                                  (or query-prefix "")
-                                  input))))
+                          (funcall (or query-filter
+                                       #'identity)
+                                   (concat (or org-pivot-search-query-prefix "")
+                                           (or query-prefix "")
+                                           input)))))
               ;; `mapcan' seems to create a circular list, which makes completion
               ;; freeze. I will use `append' as an alternative here. I am not
               ;; sure if this is a proper way to avoid the issue.
