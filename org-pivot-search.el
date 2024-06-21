@@ -135,6 +135,7 @@ The function takes the marker of the headline as an argument."
 ;;;###autoload
 (cl-defun org-pivot-search-from-files (files &key display-action (indirect t)
                                              noninteractive
+                                             (types '(heading target))
                                              prompt
                                              query-prefix
                                              query-filter)
@@ -142,6 +143,15 @@ The function takes the marker of the headline as an argument."
 
 If NONINTERACTIVE is non-nil, it returns a cons cell of (CATEGORY
 . STRING) instead of opening the target location in a window.
+
+TYPES limits the types of completion candidates. It is a list that
+contains at least one of the following symbols:
+
+ * @\'heading, which indicates the candidates contain headings which
+   are filtered by an org-ql query.
+
+ * @\'target, which indicates the candidates contain link target
+   provided by @\'org-nlink package.
 
 PROMPT is the prompt of the `completing-read' session.
 
@@ -160,6 +170,7 @@ that transforms the plain query just before it is parsed."
           (width (funcall org-pivot-search-width-function))
           (nlink-items (org-pivot-search--nlink-candidates files))
           (table (make-hash-table :test #'equal :size 200))
+          (types (ensure-list types))
           ;; The completion table is usually called more than once, e.g. for
           ;; `all-completions' and `try-completion', so it will be more efficient
           ;; to memorize dynamic candidates.
@@ -208,8 +219,10 @@ that transforms the plain query just before it is parsed."
                            (cons 'group-function #'org-pivot-search--group)
                            (cons 'annotation-function #'org-pivot-search--annotate))))
               (`t
-               (process-candidates (append (all-completions input nlink-items pred)
-                                           (setq ql-candidates (ql-candidates input)))))
+               (process-candidates (append (when (memq 'target types)
+                                             (all-completions input nlink-items pred))
+                                           (when (memq 'heading types)
+                                             (setq ql-candidates (ql-candidates input))))))
               (`nil
                (try-completion input nlink-items pred))
               (`lambda
