@@ -136,10 +136,13 @@ The function takes the marker of the headline as an argument."
 (cl-defun org-pivot-search-from-files (files &key display-action (indirect t)
                                              noninteractive
                                              query-prefix)
+                                             prompt
   "Perform search of items from a given set of Org files.
 
 If NONINTERACTIVE is non-nil, it returns a cons cell of (CATEGORY
 . STRING) instead of opening the target location in a window.
+
+PROMPT is the prompt of the `completing-read' session.
 
 QUERY-PREFIX should be, like in `org-ql-completing-read', a string
 prepended to the plain query typed by the user."
@@ -212,9 +215,10 @@ prepended to the plain query typed by the user."
               (completion-styles `(,style))
               (completion-styles-alist (cons (list style #'try #'all)
                                              completion-styles-alist))
-              (input (completing-read (format "Org search (%s): "
-                                              (mapconcat #'file-name-nondirectory
-                                                         files ", "))
+              (input (completing-read (or prompt
+                                          (format "Org search (%s): "
+                                                  (mapconcat #'file-name-nondirectory
+                                                             files ", ")))
                                       #'completions)))
          (if noninteractive
              (if-let (choice (gethash input table))
