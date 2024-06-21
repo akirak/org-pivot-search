@@ -220,7 +220,7 @@ prepended to the plain query typed by the user."
              (if-let (choice (gethash input table))
                  (cons (org-pivot-search--category choice)
                        choice)
-               (cons nil choice))
+               (cons nil input))
            (if-let (choice (gethash input table))
                (org-pivot-search--run-choice choice
                                              :display-action display-action
