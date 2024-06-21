@@ -134,11 +134,16 @@ The function takes the marker of the headline as an argument."
 
 ;;;###autoload
 (cl-defun org-pivot-search-from-files (files &key display-action (indirect t)
-                                             noninteractive)
+                                             noninteractive
+                                             query-prefix)
   "Perform search of items from a given set of Org files.
 
 If NONINTERACTIVE is non-nil, it returns a cons cell of (CATEGORY
-. STRING) instead of opening the target location in a window."
+. STRING) instead of opening the target location in a window.
+
+QUERY-PREFIX should be, like in `org-ql-completing-read', a string
+prepended to the plain query typed by the user."
+  (declare (indent 1))
   (interactive (funcall org-pivot-search-default-arguments)
                org-mode)
   (org-pivot-search--with-increased-gc
@@ -170,6 +175,7 @@ If NONINTERACTIVE is non-nil, it returns a cons cell of (CATEGORY
             (let (result
                   (query (org-ql--query-string-to-sexp
                           (concat (or org-pivot-search-query-prefix "")
+                                  (or query-prefix "")
                                   input))))
               ;; `mapcan' seems to create a circular list, which makes completion
               ;; freeze. I will use `append' as an alternative here. I am not
