@@ -168,7 +168,8 @@ that transforms the plain query just before it is parsed."
           (multi-p (> (length files) 1))
           (style (make-symbol "org-pivot-search--completion-style"))
           (width (funcall org-pivot-search-width-function))
-          (nlink-items (org-pivot-search--nlink-candidates files))
+          (nlink-items (when (memq 'target types)
+                         (org-pivot-search--nlink-candidates files)))
           (table (make-hash-table :test #'equal :size 200))
           (types (ensure-list types))
           ;; The completion table is usually called more than once, e.g. for
