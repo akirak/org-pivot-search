@@ -170,7 +170,7 @@ that transforms the plain query just before it is parsed."
           (width (funcall org-pivot-search-width-function))
           (nlink-items (when (memq 'target types)
                          (org-pivot-search--nlink-candidates files)))
-          (table (make-hash-table :test #'equal :size 200))
+          (table (make-hash-table :test #'equal :size 1000))
           (types (ensure-list types))
           ;; The completion table is usually called more than once, e.g. for
           ;; `all-completions' and `try-completion', so it will be more efficient
