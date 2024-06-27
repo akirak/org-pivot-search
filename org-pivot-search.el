@@ -330,8 +330,15 @@ See `org-pivot-search-default-arguments'."
                                  (concat todo-keyword " " headline)
                                headline))
          (candidate (if olp
-                        (concat (org-format-outline-path olp (- width (length headline-with-todo))
-                                                         prefix "/")
+                        (concat (org-format-outline-path
+                                 olp
+                                 ;; The width must be always positive. Actually,
+                                 ;; the headline can be so long as to collapse
+                                 ;; most of the outline path, and the headline
+                                 ;; should be truncated in such a case.
+                                 (max (- width (length headline-with-todo))
+                                      (/ width 2))
+                                 prefix "/")
                                 "/"
                                 headline-with-todo)
                       headline-with-todo))
