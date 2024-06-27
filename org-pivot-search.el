@@ -319,11 +319,22 @@ See `org-pivot-search-default-arguments'."
   (let* ((element (org-element-headline-parser))
          (headline (org-link-display-format
                     (org-element-property :raw-value element)))
+         (todo-keyword (org-element-property :todo-keyword element))
          (olp (thread-last
-                (org-get-outline-path 'with-self 'use-cache)
+                (org-get-outline-path nil 'use-cache)
                 (mapcar #'org-no-properties)
                 (mapcar #'org-link-display-format)))
-         (candidate (org-format-outline-path olp width prefix))
+         (headline-face (nth (% (length olp) org-n-level-faces) org-level-faces))
+         (headline (org-add-props headline nil 'face headline-face))
+         (headline-with-todo (if todo-keyword
+                                 (concat todo-keyword " " headline)
+                               headline))
+         (candidate (if olp
+                        (concat (org-format-outline-path olp (- width (length headline-with-todo))
+                                                         prefix "/")
+                                "/"
+                                headline-with-todo)
+                      headline-with-todo))
          (beg-marker (copy-marker (org-element-property :begin element)))
          (end-marker (copy-marker (org-element-property :end element)))
          (item (cons 'org-headline (cons headline (cons beg-marker end-marker)))))
