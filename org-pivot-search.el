@@ -137,6 +137,7 @@ The function takes the marker of the headline as an argument."
                                              noninteractive
                                              (types '(heading target))
                                              prompt
+                                             heading-sort
                                              query-prefix
                                              query-filter)
   "Perform search of items from a given set of Org files.
@@ -155,6 +156,12 @@ contains at least one of the following symbols:
 
 PROMPT is the prompt of the `completing-read' session.
 
+If HEADING-SORT is one of the following values, the headings are sorted:
+
+ * @\'inactive, the first inactive time stamp in the entry.
+
+ * @\'clock, the last clocked time.
+
 QUERY-PREFIX should be, like in `org-ql-completing-read', a string
 prepended to the plain query typed by the user.
 
@@ -172,9 +179,21 @@ that transforms the plain query just before it is parsed."
                          (org-pivot-search--nlink-candidates files)))
           (table (make-hash-table :test #'equal :size 1000))
           (types (ensure-list types))
+          (heading-sort-key (pcase heading-sort
+                              (`inactive
+                               (when (re-search-forward org-ts-regexp-inactive
+                                                        (org-entry-end-position) t)
+                                 (float-time (org-parse-time-string (match-string 0)))))
+                              (`clock
+                               (when (re-search-forward org-clock-line-re
+                                                        (org-entry-end-position) t)
+                                 (when (looking-at (rx (+ blank)))
+                                   (goto-char (match-end 0)))
+                                 (when (looking-at org-ts-regexp-inactive)
+                                   (float-time (org-parse-time-string (match-string 0))))))))
           ;; The completion table is usually called more than once, e.g. for
           ;; `all-completions' and `try-completion', so it will be more efficient
-          ;; to memorize dynamic candidates.
+          ;; to memoize dynamic candidates.
           ql-candidates)
      (cl-labels
          ((process-candidates (items)
@@ -209,7 +228,12 @@ that transforms the plain query just before it is parsed."
                                                #'org-pivot-search--entry-candidate
                                                width
                                                (when multi-p
-                                                 (org-pivot-search--candidate-prefix-1 file)))))))
+                                                 (org-pivot-search--candidate-prefix-1 file))
+                                               :sort-key heading-sort-key)))))
+              (when heading-sort-key
+                (setq result (cl-sort result #'> :key
+                                      (lambda (t)
+                                        (get-text-property 0 'sort-key t)))))
               result))
 
           (completions (input pred action)
@@ -235,6 +259,7 @@ that transforms the plain query just before it is parsed."
               (completion-styles `(,style))
               (completion-styles-alist (cons (list style #'try #'all)
                                              completion-styles-alist))
+              (completions-sort nil)
               (input (completing-read (or prompt
                                           (format "Org search (%s): "
                                                   (mapconcat #'file-name-nondirectory
@@ -315,7 +340,8 @@ See `org-pivot-search-default-arguments'."
 
 ;;;; Building candidates
 
-(defun org-pivot-search--entry-candidate (&optional width prefix)
+(cl-defun org-pivot-search--entry-candidate (&optional width prefix
+                                                       &key sort-key)
   (let* ((element (org-element-headline-parser))
          (headline (org-link-display-format
                     (org-element-property :raw-value element)))
@@ -350,6 +376,8 @@ See `org-pivot-search-default-arguments'."
                                'multi-category item
                                'org-marker beg-marker)
                          candidate)
+    (when sort-key
+      (put-text-property 0 (length candidate) 'sort-key (funcall sort-key)))
     candidate))
 
 (defun org-pivot-search--circular-free (element)
