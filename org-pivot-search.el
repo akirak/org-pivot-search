@@ -38,11 +38,22 @@
 
 ;;; Code:
 
+(require 'cl-lib)
+(require 'cl-macs)
+(require 'subr-x)
 (require 'pcase)
 (require 'map)
 (require 'org-ql)
 (require 'org-nlink nil t)
 (require 'org-dog nil t)
+
+(defvar org-nlink-target-cache)
+(declare-function org-nlink-build-cache "ext:org-nlink")
+(declare-function org-nlink-annotate-target "ext:org-nlink")
+(declare-function org-ql-search "ext:org-ql")
+(declare-function org-ql--normalize-query "ext:org-ql")
+(declare-function org-dog-file-object "ext:org-dog")
+(declare-function org-dog-link-target-occur "ext:org-dog")
 
 (defgroup org-pivot-search nil
   "Experimental search command for Org files."
@@ -132,6 +143,13 @@ The function takes the marker of the headline as an argument."
 
 ;;;; Interactive commands
 
+(defvar org-pivot-search--ql-candidates nil
+  "Hash table to store org-ql candidates.
+
+The completion table is usually called more than once, e.g. for
+`all-completions' and `try-completion', so it will be more efficient to
+memorize dynamic candidates."  )
+
 ;;;###autoload
 (cl-defun org-pivot-search-from-files (files &key display-action (indirect t)
                                              noninteractive
@@ -171,11 +189,7 @@ that transforms the plain query just before it is parsed."
           (nlink-items (when (memq 'target types)
                          (org-pivot-search--nlink-candidates files)))
           (table (make-hash-table :test #'equal :size 1000))
-          (types (ensure-list types))
-          ;; The completion table is usually called more than once, e.g. for
-          ;; `all-completions' and `try-completion', so it will be more efficient
-          ;; to memorize dynamic candidates.
-          ql-candidates)
+          (types (ensure-list types)))
      (cl-labels
          ((process-candidates (items)
             (dolist (x items)
@@ -190,7 +204,7 @@ that transforms the plain query just before it is parsed."
           (all (input table pred _point)
             (all-completions input table pred))
 
-          (ql-candidates (input)
+          (build-ql-candidates (input)
             (let (result
                   (query (org-ql--query-string-to-sexp
                           (funcall (or query-filter
@@ -223,7 +237,7 @@ that transforms the plain query just before it is parsed."
                (process-candidates (append (when (memq 'target types)
                                              (all-completions input nlink-items pred))
                                            (when (memq 'heading types)
-                                             (setq ql-candidates (ql-candidates input))))))
+                                             (setq org-pivot-search--ql-candidates (build-ql-candidates input))))))
               (`nil
                (try-completion input nlink-items pred))
               (`lambda
@@ -251,7 +265,7 @@ that transforms the plain query just before it is parsed."
                                              :indirect indirect)
              (funcall org-pivot-search-fallback-function input files))))))))
 
-(defun org-pivot-search-default-arguments-1 (&optional arg)
+(defun org-pivot-search-default-arguments-1 (&optional _arg)
   "Arguments specification.
 
 See `org-pivot-search-default-arguments'."
@@ -270,7 +284,7 @@ See `org-pivot-search-default-arguments'."
         (org-dog-link-target-occur choice
                                    (buffer-file-name (marker-buffer marker))
                                    :radio radio))))
-    (otherwise
+    (_
      (let* ((marker (get-text-property 0 'org-marker choice))
             (ret (if indirect
                      (org-with-point-at marker
