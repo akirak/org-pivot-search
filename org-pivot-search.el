@@ -71,7 +71,10 @@
 
 The function takes one argument, the current prefix argument. It
 should return a list, which is used as the argument of
-`org-pivot-search-from-files' function, which see."
+`org-pivot-search-from-files' function, which see.
+
+You don't have to specify :interactive here, because it is implied and
+appended anyway."
   :type 'function)
 
 (defcustom org-pivot-search-display-action
@@ -152,15 +155,16 @@ memorize dynamic candidates."  )
 
 ;;;###autoload
 (cl-defun org-pivot-search-from-files (files &key display-action (indirect t)
-                                             noninteractive
+                                             interactive
                                              (types '(heading target))
                                              prompt
                                              query-prefix
                                              query-filter)
   "Perform search of items from a given set of Org files.
 
-If NONINTERACTIVE is non-nil, it returns a cons cell of (CATEGORY
-. STRING) instead of opening the target location in a window.
+If INTERACTIVE is non-nil, it behaves the same as in interactive usage.
+Otherwise, it returns a cons cell of (CATEGORY . STRING) instead of
+opening the target location in a window.
 
 TYPES limits the types of completion candidates. It is a list that
 contains at least one of the following symbols:
@@ -179,7 +183,8 @@ prepended to the plain query typed by the user.
 QUERY-FILTER should be, like in `org-ql-completing-read', a function
 that transforms the plain query just before it is parsed."
   (declare (indent 1))
-  (interactive (funcall org-pivot-search-default-arguments)
+  (interactive (append (funcall org-pivot-search-default-arguments)
+                       '(:interactive t))
                org-mode)
   (org-pivot-search--with-increased-gc
    (let* ((files (ensure-list files))
@@ -254,16 +259,16 @@ that transforms the plain query just before it is parsed."
                                                   (mapconcat #'file-name-nondirectory
                                                              files ", ")))
                                       #'completions)))
-         (if noninteractive
+         (if interactive
              (if-let (choice (gethash input table))
-                 (cons (org-pivot-search--category choice)
-                       choice)
-               (cons nil input))
+                 (org-pivot-search--run-choice choice
+                                               :display-action display-action
+                                               :indirect indirect)
+               (funcall org-pivot-search-fallback-function input files))
            (if-let (choice (gethash input table))
-               (org-pivot-search--run-choice choice
-                                             :display-action display-action
-                                             :indirect indirect)
-             (funcall org-pivot-search-fallback-function input files))))))))
+               (cons (org-pivot-search--category choice)
+                     choice)
+             (cons nil input))))))))
 
 (defun org-pivot-search-default-arguments-1 (&optional _arg)
   "Arguments specification.
