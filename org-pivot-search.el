@@ -4,7 +4,7 @@
 
 ;; Author: Akira Komamura <akira.komamura@gmail.com>
 ;; Version: 0.1
-;; Package-Requires: ((emacs "28.1") (org-ql "0.6"))
+;; Package-Requires: ((emacs "29.1") (org-ql "0.9"))
 ;; Keywords: outlines convenience
 ;; URL: https://github.com/akirak/org-pivot-search
 
