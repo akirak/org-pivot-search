@@ -10,8 +10,8 @@ on:
       - 'README.*'
   workflow_dispatch:
 jobs:
-  byte-compile:
-    uses: emacs-twist/elisp-workflows/.github/workflows/byte-compile.yml@master
+  compile-and-test:
+    uses: emacs-twist/elisp-workflows/.github/workflows/compile-and-test.yml@master
     with:
       # rice-config: github:emacs-twist/rice-config
       melpa: github:akirak/melpa/akirak
