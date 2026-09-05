@@ -275,12 +275,12 @@ that transforms the plain query just before it is parsed."
                                             (string org-pivot-search-prompt)))
                                       #'completions)))
          (if interactive
-             (if-let (choice (gethash input table))
+             (if-let* ((choice (gethash input table)))
                  (org-pivot-search--run-choice choice
                                                :display-action display-action
                                                :indirect indirect)
                (funcall org-pivot-search-fallback-function input files))
-           (if-let (choice (gethash input table))
+           (if-let* ((choice (gethash input table)))
                (cons (org-pivot-search--category choice)
                      choice)
              (cons nil input))))))))
@@ -402,8 +402,8 @@ See `org-pivot-search-default-arguments'."
 
 (defun org-pivot-search--candidate-prefix-1 (file)
   (let ((filename (abbreviate-file-name file)))
-    (if-let (obj (and (featurep 'org-dog)
-                      (org-dog-file-object filename :allow-missing t)))
+    (if-let* ((obj (and (featurep 'org-dog)
+                        (org-dog-file-object filename :allow-missing t))))
         ;; oref doesn't work if this library is byte-compiled without org-dog
         (slot-value obj 'relative)
       filename)))
