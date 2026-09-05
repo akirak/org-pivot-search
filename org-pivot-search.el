@@ -125,6 +125,19 @@ completion UI."
 The function takes the marker of the headline as an argument."
   :type '(choice function (const nil)))
 
+(defcustom org-pivot-search-prompt
+  #'org-pivot-search-prompt-1
+  "Default prompt used in `org-pivot-search-from-files'.
+
+This can be either a string or a function. If it is a function, it takes
+the list of files as the argument."
+  :type '(choice function
+                 string))
+
+(defcustom org-pivot-search-prompt-num-files 5
+  ""
+  :type 'number)
+
 (defvar org-pivot-search-gc-threshold (* 64 1024 1024)
   "Large GC threshold for temporary increase.")
 
@@ -255,9 +268,11 @@ that transforms the plain query just before it is parsed."
               (completion-styles-alist (cons (list style #'try #'all)
                                              completion-styles-alist))
               (input (completing-read (or prompt
-                                          (format "Org search (%s): "
-                                                  (mapconcat #'file-name-nondirectory
-                                                             files ", ")))
+                                          (cl-etypecase org-pivot-search-prompt
+                                            (function
+                                             (funcall org-pivot-search-prompt
+                                                      files))
+                                            (string org-pivot-search-prompt)))
                                       #'completions)))
          (if interactive
              (if-let (choice (gethash input table))
@@ -269,6 +284,14 @@ that transforms the plain query just before it is parsed."
                (cons (org-pivot-search--category choice)
                      choice)
              (cons nil input))))))))
+
+(defun org-pivot-search-prompt-1 (files)
+  "Return a completion prompt."
+  (format "Org search (%s): "
+          (if (<= (length files) org-pivot-search-prompt-num-files)
+              (mapconcat #'file-name-nondirectory
+                         files ", ")
+            (format "%d files" (length files)))))
 
 (defun org-pivot-search-default-arguments-1 (&optional _arg)
   "Arguments specification.
