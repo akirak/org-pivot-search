@@ -241,7 +241,8 @@ that transforms the plain query just before it is parsed."
                                                #'org-pivot-search--entry-candidate
                                                width
                                                (when multi-p
-                                                 (org-pivot-search--candidate-prefix-1 file)))))))
+                                                 (org-pivot-search--candidate-prefix-1
+                                                  file)))))))
               result))
 
           (completions (input pred action)
@@ -255,7 +256,8 @@ that transforms the plain query just before it is parsed."
                (process-candidates (append (when (memq 'target types)
                                              (all-completions input nlink-items pred))
                                            (when (memq 'heading types)
-                                             (setq org-pivot-search--ql-candidates (build-ql-candidates input))))))
+                                             (setq org-pivot-search--ql-candidates
+                                                   (build-ql-candidates input))))))
               (`nil
                (try-completion input nlink-items pred))
               (`lambda
