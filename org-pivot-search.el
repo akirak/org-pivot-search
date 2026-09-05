@@ -138,6 +138,10 @@ the list of files as the argument."
   ""
   :type 'number)
 
+(defcustom org-pivot-search-prefix-function #'identity
+  "A function that formats the prefix from a file name."
+  :type 'string)
+
 (defvar org-pivot-search-gc-threshold (* 64 1024 1024)
   "Large GC threshold for temporary increase.")
 
@@ -408,7 +412,7 @@ See `org-pivot-search-default-arguments'."
                         (org-dog-file-object filename :allow-missing t))))
         ;; oref doesn't work if this library is byte-compiled without org-dog
         (slot-value obj 'relative)
-      filename)))
+      (funcall org-pivot-search-prefix-function filename))))
 
 (defun org-pivot-search--nlink-candidates (files)
   (when (featurep 'org-nlink)
